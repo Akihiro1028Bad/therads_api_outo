@@ -4,6 +4,7 @@ from typing import List, Dict
 from user_manager import UserManager
 from image_pair_poster import ImagePairPoster
 import random
+import time
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,27 +29,26 @@ class MultiUserPoster:
         results = []
 
         # 1分から60分の間でランダムに待機時間を設定
-        wait_time = random.randint(60, 3600)  # 60秒（1分）から3600秒（60分）の間
-        logger.info(f"投稿開始前に {wait_time} 秒間待機します。")
-        time.sleep(wait_time)
+        #wait_time = random.randint(60, 3600)  # 60秒（1分）から3600秒（60分）の間
+        #logger.info(f"投稿開始前に {wait_time} 秒間待機します。")
+        #time.sleep(wait_time)
 
-        # ThreadPoolExecutorを使用して並列処理を実行
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future_to_user = {executor.submit(self._post_for_user, user): user for user in users}
-            for future in as_completed(future_to_user):
-                user = future_to_user[future]
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as exc:
-                    logger.error(f"ユーザー '{user['username']}' の投稿中にエラーが発生しました: {exc}")
-                    results.append({"username": user['username'], "status": "error", "message": str(exc)})
-
-                # 次のユーザーの処理前に1分から10分の間でランダムに待機
-                if future != list(future_to_user.keys())[-1]:  # 最後のユーザーでない場合のみ待機
-                    wait_time = random.randint(60, 600)  # 60秒（1分）から600秒（10分）の間
-                    logger.info(f"次のユーザーの処理まで {wait_time} 秒間待機します。")
-                    time.sleep(wait_time)
+        # アカウントごとに順番に処理を実行
+        results = []
+        for i, user in enumerate(users):
+            try:
+                result = self._post_for_user(user)
+                results.append(result)
+                logger.info(f"ユーザー '{user['username']}' の投稿が完了しました。")
+            except Exception as exc:
+                logger.error(f"ユーザー '{user['username']}' の投稿中にエラーが発生しました: {exc}")
+                results.append({"username": user['username'], "status": "error", "message": str(exc)})
+            
+            # 最後のユーザーでない場合のみ待機
+            if i < len(users) - 1:
+                wait_time = random.randint(60, 600)  # 60秒（1分）から600秒（10分）の間
+                logger.info(f"次のユーザーの処理まで {wait_time} 秒間待機します。")
+                time.sleep(wait_time)
 
         return results
 
