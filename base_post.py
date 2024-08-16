@@ -15,13 +15,14 @@ class ThreadsClient:
     機能を提供します。
     """
 
-    def __init__(self, auth_token):
+    def __init__(self, auth_token, username):
         """
         ThreadsClientの初期化
         
         :param auth_token: API認証用のトークン
         """
         self.auth_token = auth_token
+        self.username = username
         self.base_url = 'https://graph.threads.net/v1.0'
         logger.info("ThreadsClient初期化完了")
 

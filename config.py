@@ -15,3 +15,19 @@ THREADS_AUTH_TOKEN = os.getenv('THREADS_AUTH_TOKEN')
 # 画像ペア設定
 IMAGE_PAIRS_FOLDER = 'image_pairs'
 IMAGE_PAIRS_JSON = 'image_pairs.json'
+
+# ユーザー名を画像に印字する機能のオン/オフ
+WATERMARK_USERNAME = False
+
+# ユーザー名の印字位置（中心からの相対位置）
+WATERMARK_POSITION = {
+    'x': 0.6,  # 中心からやや右に
+    'y': 0.5   # 垂直方向の中央
+}
+
+# ユーザー名の印字スタイル
+WATERMARK_STYLE = {
+    'font_size': 20,
+    'font_color': 'white',
+    'opacity': 70
+}

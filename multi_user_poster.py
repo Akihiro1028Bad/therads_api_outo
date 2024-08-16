@@ -61,7 +61,7 @@ class MultiUserPoster:
         """
         logger.info(f"ユーザー '{user['username']}' の投稿を開始します。")
         try:
-            poster = ImagePairPoster(user['access_token'])
+            poster = ImagePairPoster(user['access_token'], user['username'])
             thread_id = poster.post_image_pair()
             logger.info(f"ユーザー '{user['username']}' の投稿が成功しました。Thread ID: {thread_id}")
             return {"username": user['username'], "status": "success", "thread_id": thread_id}

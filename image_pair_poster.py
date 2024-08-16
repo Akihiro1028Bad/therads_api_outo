@@ -12,13 +12,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class ImagePairPoster:
-    def __init__(self, auth_token: str):
+    def __init__(self, auth_token: str, username: str):
         """
         ImagePairPosterクラスのコンストラクタ
 
         :param auth_token: Threads APIの認証トークン
         """
-        self.threads_client = ThreadsClient(auth_token)
+        self.threads_client = ThreadsClient(auth_token, username)
         self.cloudinary_uploader = CloudinaryUploader()
         self.image_pair_manager = ImagePairManager()
         logger.info("ImagePairPosterが初期化されました。")
@@ -43,13 +43,14 @@ class ImagePairPoster:
         pair = self.select_random_pair()
         folder = pair['folder']
         caption = pair['caption']
+        username = self.threads_client.username  # ユーザー名を取得
 
         image1_path = os.path.join(IMAGE_PAIRS_FOLDER, folder, 'image1.jpg')
         image2_path = os.path.join(IMAGE_PAIRS_FOLDER, folder, 'image2.jpg')
 
         try:
-            image1_url = self.cloudinary_uploader.upload(image1_path)
-            image2_url = self.cloudinary_uploader.upload(image2_path)
+            image1_url = self.cloudinary_uploader.upload(image1_path, username)
+            image2_url = self.cloudinary_uploader.upload(image2_path, username)
 
             # ThreadsClientを使用してカルーセル投稿
             thread_id = self.threads_client.post_carousel([image1_url, image2_url], caption)
