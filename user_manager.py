@@ -1,30 +1,49 @@
 import json
 import logging
 from typing import List, Dict
+import os
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class UserManager:
-    def __init__(self, users_file: str):
+    def __init__(self, users_file: str, replies_parent_folder: str):
         """
         UserManagerクラスのコンストラクタ
 
         :param users_file: ユーザー情報が格納されているJSONファイルのパス
+        :param replies_parent_folder: リプライ用フォルダの親フォルダのパス
         """
         self.users_file = users_file
+        self.replies_parent_folder = replies_parent_folder
         self.users: List[Dict[str, str]] = []
         self._load_users()
 
     def _load_users(self) -> None:
         """
-        JSONファイルからユーザー情報を読み込む
+        JSONファイルからユーザー情報を読み込み、リプライフォルダの存在を確認する
         """
         try:
             with open(self.users_file, 'r', encoding='utf-8') as f:
                 self.users = json.load(f)
             logger.info(f"{len(self.users)}人のユーザー情報を正常に読み込みました。")
+            
+            # リプライの親フォルダが存在しない場合は作成
+            if not os.path.exists(self.replies_parent_folder):
+                os.makedirs(self.replies_parent_folder)
+                logger.info(f"リプライの親フォルダを作成しました: {self.replies_parent_folder}")
+
+            # 各ユーザーのリプライフォルダの存在を確認
+            for user in self.users:
+                reply_folder = os.path.join(self.replies_parent_folder, user['username'])
+                if os.path.exists(reply_folder):
+                    user['has_reply_folder'] = True
+                    logger.info(f"ユーザー '{user['username']}' のリプライフォルダが見つかりました: {reply_folder}")
+                else:
+                    user['has_reply_folder'] = False
+                    logger.info(f"ユーザー '{user['username']}' のリプライフォルダが見つかりません。リプライは行いません。")
+
         except FileNotFoundError:
             logger.error(f"ユーザーファイル '{self.users_file}' が見つかりません。")
             raise

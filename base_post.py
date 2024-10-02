@@ -165,6 +165,41 @@ class ThreadsClient:
         logger.info(f"カルーセル投稿完了. スレッドID: {thread_id}")
         return thread_id
 
+    def create_reply(self, reply_to_id: str, text: str, image_url: str = None) -> str:
+        """
+        返信コンテナを作成する
+
+        :param reply_to_id: 返信先の投稿ID
+        :param text: 返信テキスト
+        :param image_url: 画像URL（オプション）
+        :return: 作成された返信コンテナのID
+        """
+        logger.info(f"返信コンテナの作成を開始: 返信先ID={reply_to_id}")
+        params = {
+            'media_type': 'IMAGE' if image_url else 'TEXT',
+            'text': text,
+            'reply_to_id': reply_to_id
+        }
+        if image_url:
+            params['image_url'] = image_url
+
+        response = self._request('POST', f'/me/threads', params=params)
+        logger.info(f"返信コンテナの作成が成功しました。ID: {response['id']}")
+        return response['id']
+
+    def publish_reply(self, container_id: str) -> str:
+        """
+        返信を公開する
+
+        :param container_id: 公開する返信コンテナのID
+        :return: 公開された返信のID
+        """
+        logger.info(f"返信の公開を開始: コンテナID={container_id}")
+        params = {'creation_id': container_id}
+        response = self._request('POST', f'/me/threads_publish', params=params)
+        logger.info(f"返信の公開が成功しました。ID: {response['id']}")
+        return response['id']
+
 # 使用例
 if __name__ == "__main__":
     client = ThreadsClient("THQWJYTWRGUE80Y1gyZAFkyTUgzS1NIaXNTU0QyZA29rd2JZAM3NWQlp1TmxyMGUtaGlvS1VMTWZAjUFJTbEg2cS1zb0cxTW9xVnF4X0RsMHJNRHVqZAzhGb20xTnJRdldNcm5VQ2czdkNVMHZA2R1FabXRWMFRIWnBmTUZALVFNVcWUzRzFsMmNYNnB3")

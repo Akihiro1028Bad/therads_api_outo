@@ -6,6 +6,7 @@ from base_post import ThreadsClient
 from cloudinary_uploader import CloudinaryUploader
 from image_pair_manager import ImagePairManager
 from config import IMAGE_PAIRS_FOLDER
+from reply_poster import ReplyPoster
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -60,17 +61,39 @@ class ImagePairPoster:
             logger.error(f"画像ペアの投稿中にエラーが発生しました: {str(e)}")
             raise
 
-    def run(self) -> str:
+    def post_image_pair_with_reply(self) -> Dict[str, str]:
+        """
+        画像ペアを投稿し、その投稿に返信する
+
+        :return: 投稿されたスレッドIDと返信IDを含む辞書
+        """
+        logger.info("画像ペアの投稿と返信を開始します。")
+        try:
+            thread_id = self.post_image_pair()
+            logger.info(f"画像ペアの投稿が成功しました。スレッドID: {thread_id}")
+
+            # 返信の投稿
+            reply_poster = ReplyPoster(self.threads_client.auth_token, self.threads_client.username)
+            reply_text = "これは自動生成された返信です。"
+            reply_id = reply_poster.post_reply(thread_id, reply_text)
+            logger.info(f"返信の投稿が成功しました。返信ID: {reply_id}")
+
+            return {"thread_id": thread_id, "reply_id": reply_id}
+        except Exception as e:
+            logger.error(f"画像ペアの投稿と返信中にエラーが発生しました: {str(e)}")
+            raise
+
+    def run(self) -> Dict[str, str]:
         """
         メイン実行関数
 
-        :return: 投稿されたスレッドのID
+        :return: 投稿されたスレッドIDと返信IDを含む辞書
         """
         try:
             self.image_pair_manager.update_json()  # JSONファイルを更新
-            thread_id = self.post_image_pair()
-            logger.info(f"処理が正常に完了しました。スレッドID: {thread_id}")
-            return thread_id
+            result = self.post_image_pair_with_reply()
+            logger.info(f"処理が正常に完了しました。スレッドID: {result['thread_id']}, 返信ID: {result['reply_id']}")
+            return result
         except Exception as e:
             logger.error(f"実行プロセス中にエラーが発生しました: {str(e)}")
             raise

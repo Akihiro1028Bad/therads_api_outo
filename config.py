@@ -31,3 +31,5 @@ WATERMARK_STYLE = {
     'font_color': 'white',
     'opacity': 70
 }
+
+REPLIES_PARENT_FOLDER = 'user_replies'

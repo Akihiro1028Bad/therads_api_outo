@@ -2,6 +2,7 @@ import logging
 from user_manager import UserManager
 from scheduler import Scheduler
 from image_pair_manager import ImagePairManager
+from config import REPLIES_PARENT_FOLDER
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -11,7 +12,7 @@ def main():
     logger.info("スケジュールされた画像ペア投稿プロセスを開始します。")
     
     # ユーザーマネージャーを初期化
-    user_manager = UserManager("users.json")
+    user_manager = UserManager("users.json", REPLIES_PARENT_FOLDER)
 
     # JSONファイルを更新
     image_pair_manager = ImagePairManager()
