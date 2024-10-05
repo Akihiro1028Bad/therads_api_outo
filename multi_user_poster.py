@@ -4,22 +4,19 @@ from typing import List, Dict
 from user_manager import UserManager
 from image_pair_poster import ImagePairPoster
 from reply_poster import ReplyPoster
+from image_pair_manager import ImagePairManager
 import random
 import time
-from config import REPLIES_PARENT_FOLDER
+from config import REPLIES_PARENT_FOLDER, IMAGE_PAIRS_FOLDER
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class MultiUserPoster:
-    def __init__(self, user_manager: UserManager):
-        """
-        MultiUserPosterクラスのコンストラクタ
-
-        :param user_manager: UserManagerインスタンス
-        """
+    def __init__(self, user_manager: UserManager, image_pair_manager: ImagePairManager):
         self.user_manager = user_manager
+        self.image_pair_manager = image_pair_manager
 
     def post_for_all_users(self) -> List[Dict[str, str]]:
         """
@@ -89,7 +86,7 @@ class MultiUserPoster:
 
         try:
             # 画像ペアの投稿
-            poster = ImagePairPoster(user['access_token'], user['username'])
+            poster = ImagePairPoster(user['access_token'], user['username'], IMAGE_PAIRS_FOLDER)
             thread_id = poster.post_image_pair()
             result["thread_id"] = thread_id
             logger.info(f"ユーザー '{user['username']}' の画像ペア投稿が成功しました。スレッドID: {thread_id}")

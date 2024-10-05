@@ -7,13 +7,14 @@ from cloudinary_uploader import CloudinaryUploader
 from image_pair_manager import ImagePairManager
 from config import IMAGE_PAIRS_FOLDER
 from reply_poster import ReplyPoster
+from config import REPLIES_PARENT_FOLDER
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class ImagePairPoster:
-    def __init__(self, auth_token: str, username: str):
+    def __init__(self, auth_token: str, username: str, image_pairs_folder: str):
         """
         ImagePairPosterクラスのコンストラクタ
 
@@ -21,40 +22,34 @@ class ImagePairPoster:
         """
         self.threads_client = ThreadsClient(auth_token, username)
         self.cloudinary_uploader = CloudinaryUploader()
-        self.image_pair_manager = ImagePairManager()
+        self.image_pair_manager = ImagePairManager(image_pairs_folder)
+        self.username = username
+        self.reply_poster = ReplyPoster(auth_token, username, REPLIES_PARENT_FOLDER)
+
         logger.info("ImagePairPosterが初期化されました。")
 
-    def select_random_pair(self) -> Dict[str, str]:
-        """
-        ランダムに画像ペアを選択する
+    #def select_random_pair(self) -> Dict[str, str]:
+        #"""
+        #ランダムに画像ペアを選択する
 
-        :return: 選択された画像ペアの情報
-        """
-        pairs = self.image_pair_manager.get_image_pairs()
-        selected_pair = random.choice(pairs)
-        logger.info(f"ランダムに選択された画像ペア: {selected_pair['folder']}")
-        return selected_pair
+        #:return: 選択された画像ペアの情報
+        #"""
+        #pairs = self.image_pair_manager.get_image_pairs()
+        #selected_pair = random.choice(pairs)
+        #logger.info(f"ランダムに選択された画像ペア: {selected_pair['folder']}")
+        #return selected_pair
 
     def post_image_pair(self) -> str:
-        """
-        画像ペアを選択、アップロード、投稿する
-
-        :return: 投稿されたスレッドのID
-        """
-        pair = self.select_random_pair()
-        folder = pair['folder']
-        caption = pair['caption']
-        username = self.threads_client.username  # ユーザー名を取得
-
-        image1_path = os.path.join(IMAGE_PAIRS_FOLDER, folder, 'image1.jpg')
-        image2_path = os.path.join(IMAGE_PAIRS_FOLDER, folder, 'image2.jpg')
+        """ランダムに選択した画像ペアを投稿する"""
+        post = self.image_pair_manager.get_random_post(self.username)
+        if not post:
+            raise ValueError(f"No posts available for user: {self.username}")
 
         try:
-            image1_url = self.cloudinary_uploader.upload(image1_path, username)
-            image2_url = self.cloudinary_uploader.upload(image2_path, username)
+            image1_url = self.cloudinary_uploader.upload(post['image1'], self.username)
+            image2_url = self.cloudinary_uploader.upload(post['image2'], self.username)
 
-            # ThreadsClientを使用してカルーセル投稿
-            thread_id = self.threads_client.post_carousel([image1_url, image2_url], caption)
+            thread_id = self.threads_client.post_carousel([image1_url, image2_url], post['caption'])
             logger.info(f"画像ペアが正常に投稿されました。スレッドID: {thread_id}")
             return thread_id
         except Exception as e:
@@ -63,40 +58,47 @@ class ImagePairPoster:
 
     def post_image_pair_with_reply(self) -> Dict[str, str]:
         """
-        画像ペアを投稿し、その投稿に返信する
+        ランダムに選択した画像ペアを投稿し、その投稿にリプライする
 
         :return: 投稿されたスレッドIDと返信IDを含む辞書
         """
-        logger.info("画像ペアの投稿と返信を開始します。")
+        logger.info(f"ユーザー '{self.username}' の画像ペアの投稿とリプライを開始します。")
+        result = {
+            "username": self.username,
+            "status": "success",
+            "thread_id": None,
+            "reply_id": None
+        }
+
         try:
-            thread_id = self.post_image_pair()
-            logger.info(f"画像ペアの投稿が成功しました。スレッドID: {thread_id}")
+            # ランダムな投稿を選択
+            post = self.image_pair_manager.get_random_post(self.username)
+            if not post:
+                raise ValueError(f"ユーザー '{self.username}' の投稿が見つかりません。")
 
-            # 返信の投稿
-            reply_poster = ReplyPoster(self.threads_client.auth_token, self.threads_client.username)
-            reply_text = "これは自動生成された返信です。"
-            reply_id = reply_poster.post_reply(thread_id, reply_text)
-            logger.info(f"返信の投稿が成功しました。返信ID: {reply_id}")
+            # 画像をアップロード
+            image1_url = self.cloudinary_uploader.upload(post['image1'], self.username)
+            image2_url = self.cloudinary_uploader.upload(post['image2'], self.username)
 
-            return {"thread_id": thread_id, "reply_id": reply_id}
+            # 画像ペアを投稿
+            thread_id = self.threads_client.post_carousel([image1_url, image2_url], post['caption'])
+            result["thread_id"] = thread_id
+            logger.info(f"ユーザー '{self.username}' の画像ペア投稿が成功しました。スレッドID: {thread_id}")
+
+            # リプライを投稿
+            reply_id = self.reply_poster.post_reply(thread_id)
+            if reply_id:
+                result["reply_id"] = reply_id
+                logger.info(f"ユーザー '{self.username}' のリプライが成功しました。リプライID: {reply_id}")
+            else:
+                logger.info(f"ユーザー '{self.username}' のリプライは行われませんでした。")
+
         except Exception as e:
-            logger.error(f"画像ペアの投稿と返信中にエラーが発生しました: {str(e)}")
-            raise
+            logger.error(f"ユーザー '{self.username}' の処理中にエラーが発生しました: {str(e)}")
+            result["status"] = "error"
+            result["message"] = str(e)
 
-    def run(self) -> Dict[str, str]:
-        """
-        メイン実行関数
-
-        :return: 投稿されたスレッドIDと返信IDを含む辞書
-        """
-        try:
-            self.image_pair_manager.update_json()  # JSONファイルを更新
-            result = self.post_image_pair_with_reply()
-            logger.info(f"処理が正常に完了しました。スレッドID: {result['thread_id']}, 返信ID: {result['reply_id']}")
-            return result
-        except Exception as e:
-            logger.error(f"実行プロセス中にエラーが発生しました: {str(e)}")
-            raise
+        return result
 
 # 使用例
 if __name__ == "__main__":

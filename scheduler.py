@@ -6,23 +6,19 @@ from typing import List, Dict
 from datetime import datetime, timedelta
 from multi_user_poster import MultiUserPoster
 from user_manager import UserManager
+from image_pair_manager import ImagePairManager
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class Scheduler:
-    def __init__(self, config_file: str, user_manager: UserManager):
-        """
-        Schedulerクラスのコンストラクタ
-
-        :param config_file: スケジュール設定が格納されているJSONファイルのパス
-        :param user_manager: UserManagerインスタンス
-        """
+    def __init__(self, config_file: str, user_manager: UserManager, image_pair_manager: ImagePairManager):
         self.config_file = config_file
         self.user_manager = user_manager
+        self.image_pair_manager = image_pair_manager
         self.schedule_config: List[Dict[str, str]] = []
-        self.multi_user_poster = MultiUserPoster(user_manager)
+        self.multi_user_poster = MultiUserPoster(user_manager, image_pair_manager)
         self._load_config()
 
     def _load_config(self) -> None:

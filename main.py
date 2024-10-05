@@ -2,7 +2,7 @@ import logging
 from user_manager import UserManager
 from scheduler import Scheduler
 from image_pair_manager import ImagePairManager
-from config import REPLIES_PARENT_FOLDER
+from config import REPLIES_PARENT_FOLDER, IMAGE_PAIRS_FOLDER
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -14,12 +14,11 @@ def main():
     # ユーザーマネージャーを初期化
     user_manager = UserManager("users.json", REPLIES_PARENT_FOLDER)
 
-    # JSONファイルを更新
-    image_pair_manager = ImagePairManager()
-    image_pair_manager.update_json()
+    # ImagePairManagerを初期化
+    image_pair_manager = ImagePairManager(IMAGE_PAIRS_FOLDER)
     
     # スケジューラーを初期化して実行
-    scheduler = Scheduler("schedule_config.json", user_manager)
+    scheduler = Scheduler("schedule_config.json", user_manager, image_pair_manager)
     scheduler.run()
 
 if __name__ == "__main__":
