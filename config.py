@@ -13,7 +13,7 @@ CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET')
 THREADS_AUTH_TOKEN = os.getenv('THREADS_AUTH_TOKEN')
 
 # 画像ペア設定
-IMAGE_PAIRS_FOLDER = 'image_pairs'
+IMAGE_PAIRS_FOLDER = 'user_post'
 IMAGE_PAIRS_JSON = 'image_pairs.json'
 
 # ユーザー名を画像に印字する機能のオン/オフ

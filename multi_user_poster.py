@@ -2,9 +2,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict
 from user_manager import UserManager
-from image_pair_poster import ImagePairPoster
+from image_pair_poster import PostManager
 from reply_poster import ReplyPoster
-from image_pair_manager import ImagePairManager
+from image_pair_manager import PostContentManager
 import random
 import time
 from config import REPLIES_PARENT_FOLDER, IMAGE_PAIRS_FOLDER
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class MultiUserPoster:
-    def __init__(self, user_manager: UserManager, image_pair_manager: ImagePairManager):
+    def __init__(self, user_manager: UserManager, image_pair_manager: PostContentManager):
         self.user_manager = user_manager
         self.image_pair_manager = image_pair_manager
 
@@ -60,8 +60,8 @@ class MultiUserPoster:
         """
         logger.info(f"ユーザー '{user['username']}' の投稿を開始します。")
         try:
-            poster = ImagePairPoster(user['access_token'], user['username'])
-            thread_id = poster.post_image_pair()
+            poster = PostManager(user['access_token'], user['username'])
+            thread_id = poster.post_content()
             logger.info(f"ユーザー '{user['username']}' の投稿が成功しました。Thread ID: {thread_id}")
             return {"username": user['username'], "status": "success", "thread_id": thread_id}
         except Exception as e:
@@ -86,10 +86,10 @@ class MultiUserPoster:
 
         try:
             # 画像ペアの投稿
-            poster = ImagePairPoster(user['access_token'], user['username'], IMAGE_PAIRS_FOLDER)
-            thread_id = poster.post_image_pair()
+            poster = PostManager(user['access_token'], user['username'], IMAGE_PAIRS_FOLDER)
+            thread_id = poster.post_content()
             result["thread_id"] = thread_id
-            logger.info(f"ユーザー '{user['username']}' の画像ペア投稿が成功しました。スレッドID: {thread_id}")
+            logger.info(f"ユーザー '{user['username']}' の投稿が成功しました。スレッドID: {thread_id}")
 
             # リプライフォルダが存在する場合のみ返信を投稿
             if user.get('has_reply_folder', False):

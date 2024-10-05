@@ -9,14 +9,13 @@ from typing import List, Dict
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class ImagePairManager:
-    def __init__(self, image_pairs_folder: str):
-        self.image_pairs_folder = image_pairs_folder
+class PostContentManager:
+    def __init__(self, content_folder: str):
+        self.content_folder = content_folder
 
 
     def get_user_posts(self, username: str) -> List[Dict[str, str]]:
-        """指定されたユーザーの全ての投稿を取得する"""
-        user_folder = os.path.join(self.image_pairs_folder, username)
+        user_folder = os.path.join(self.content_folder, username)
         posts = []
         if os.path.exists(user_folder):
             for post_folder in os.listdir(user_folder):
@@ -28,25 +27,27 @@ class ImagePairManager:
         return posts
     
     def _load_post(self, post_path: str) -> Dict[str, str]:
-        """投稿フォルダから投稿情報を読み込む"""
         caption_file = os.path.join(post_path, 'caption.txt')
         image1_file = os.path.join(post_path, 'image1.jpg')
         image2_file = os.path.join(post_path, 'image2.jpg')
 
-        if os.path.exists(caption_file) and os.path.exists(image1_file) and os.path.exists(image2_file):
+        post = {}
+        if os.path.exists(caption_file):
             with open(caption_file, 'r', encoding='utf-8') as f:
-                caption = f.read().strip()
-            return {
-                "caption": caption,
-                "image1": image1_file,
-                "image2": image2_file
-            }
-        else:
+                post["caption"] = f.read().strip()
+
+        if os.path.exists(image1_file):
+            post["image1"] = image1_file
+        
+        if os.path.exists(image2_file):
+            post["image2"] = image2_file
+
+        if not post:
             logger.warning(f"Invalid post folder structure: {post_path}")
-            return {}
+        
+        return post
         
     def get_random_post(self, username: str) -> Dict[str, str]:
-        """指定されたユーザーのランダムな投稿を取得する"""
         posts = self.get_user_posts(username)
         if posts:
             return random.choice(posts)

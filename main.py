@@ -1,7 +1,7 @@
 import logging
 from user_manager import UserManager
 from scheduler import Scheduler
-from image_pair_manager import ImagePairManager
+from image_pair_manager import PostContentManager
 from config import REPLIES_PARENT_FOLDER, IMAGE_PAIRS_FOLDER
 
 # ロギングの設定
@@ -15,7 +15,7 @@ def main():
     user_manager = UserManager("users.json", REPLIES_PARENT_FOLDER)
 
     # ImagePairManagerを初期化
-    image_pair_manager = ImagePairManager(IMAGE_PAIRS_FOLDER)
+    image_pair_manager = PostContentManager(IMAGE_PAIRS_FOLDER)
     
     # スケジューラーを初期化して実行
     scheduler = Scheduler("schedule_config.json", user_manager, image_pair_manager)

@@ -6,14 +6,14 @@ from typing import List, Dict
 from datetime import datetime, timedelta
 from multi_user_poster import MultiUserPoster
 from user_manager import UserManager
-from image_pair_manager import ImagePairManager
+from image_pair_manager import PostContentManager
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class Scheduler:
-    def __init__(self, config_file: str, user_manager: UserManager, image_pair_manager: ImagePairManager):
+    def __init__(self, config_file: str, user_manager: UserManager, image_pair_manager: PostContentManager):
         self.config_file = config_file
         self.user_manager = user_manager
         self.image_pair_manager = image_pair_manager

@@ -136,6 +136,24 @@ class ThreadsClient:
         thread_id = self.publish_thread(container_id)
         logger.info(f"単一画像投稿完了. スレッドID: {thread_id}")
         return thread_id
+    
+    def post_text_only(self, text: str) -> str:
+        """
+        テキストのみの投稿を作成する
+
+        :param text: 投稿するテキスト
+        :return: 公開されたスレッドのID
+        """
+        logger.info(f"テキストのみの投稿を開始: {text[:30]}...")
+        params = {
+            'media_type': 'TEXT',
+            'text': text
+        }
+        response = self._request('POST', f'/me/threads', params=params)
+        thread_id = self.publish_thread(response['id'])
+
+        logger.info(f"テキスト投稿のコンテナの作成が成功しました。ID: {response['id']}")
+        return thread_id
 
     def post_carousel(self, image_urls, text=None):
         """
