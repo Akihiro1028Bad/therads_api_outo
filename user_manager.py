@@ -34,14 +34,19 @@ class UserManager:
                 os.makedirs(self.replies_parent_folder)
                 logger.info(f"リプライの親フォルダを作成しました: {self.replies_parent_folder}")
 
-            # 各ユーザーのリプライフォルダの存在を確認
+            # 各ユーザーのリプライフォルダの存在を確認し、リプライパターン数を数える
             for user in self.users:
                 reply_folder = os.path.join(self.replies_parent_folder, user['username'])
                 if os.path.exists(reply_folder):
                     user['has_reply_folder'] = True
+                    reply_patterns = [item for item in os.listdir(reply_folder) 
+                                      if os.path.isdir(os.path.join(reply_folder, item)) and item.startswith('reply')]
+                    user['reply_pattern_count'] = len(reply_patterns)
                     logger.info(f"ユーザー '{user['username']}' のリプライフォルダが見つかりました: {reply_folder}")
+                    logger.info(f"ユーザー '{user['username']}' のリプライパターン数: {user['reply_pattern_count']}")
                 else:
                     user['has_reply_folder'] = False
+                    user['reply_pattern_count'] = 0
                     logger.info(f"ユーザー '{user['username']}' のリプライフォルダが見つかりません。リプライは行いません。")
 
         except FileNotFoundError:
@@ -66,7 +71,12 @@ class UserManager:
         :param username: ユーザー名
         :param access_token: アクセストークン
         """
-        new_user = {"username": username, "access_token": access_token}
+        new_user = {
+            "username": username, 
+            "access_token": access_token,
+            "has_reply_folder": False,
+            "reply_pattern_count": 0
+        }
         self.users.append(new_user)
         self._save_users()
         logger.info(f"新しいユーザー '{username}' を追加しました。")
@@ -93,11 +103,35 @@ class UserManager:
             logger.error(f"ユーザー情報の保存中にエラーが発生しました。")
             raise
 
+    def update_user_reply_patterns(self, username: str) -> None:
+        """
+        指定されたユーザーのリプライパターン数を更新する
+
+        :param username: 更新するユーザーの名前
+        """
+        for user in self.users:
+            if user['username'] == username:
+                reply_folder = os.path.join(self.replies_parent_folder, username)
+                if os.path.exists(reply_folder):
+                    reply_patterns = [item for item in os.listdir(reply_folder) 
+                                      if os.path.isdir(os.path.join(reply_folder, item)) and item.startswith('reply')]
+                    user['has_reply_folder'] = True
+                    user['reply_pattern_count'] = len(reply_patterns)
+                    logger.info(f"ユーザー '{username}' のリプライパターン数を更新しました: {user['reply_pattern_count']}")
+                else:
+                    user['has_reply_folder'] = False
+                    user['reply_pattern_count'] = 0
+                    logger.info(f"ユーザー '{username}' のリプライフォルダが見つかりません。")
+                self._save_users()
+                return
+        logger.warning(f"ユーザー '{username}' が見つかりません。")
+
 # 使用例
 if __name__ == "__main__":
-    user_manager = UserManager("users.json")
+    user_manager = UserManager("users.json", "user_replies")
     print(user_manager.get_users())
     user_manager.add_user("new_user", "new_token")
     print(user_manager.get_users())
     user_manager.remove_user("new_user")
     print(user_manager.get_users())
+    user_manager.update_user_reply_patterns("existing_user")

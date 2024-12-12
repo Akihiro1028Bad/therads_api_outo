@@ -1,7 +1,8 @@
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import os
+import random
 from base_post import ThreadsClient
 from cloudinary_uploader import CloudinaryUploader
 
@@ -22,17 +23,49 @@ class ReplyPoster:
         self.cloudinary_uploader = CloudinaryUploader()
         self.username = username
         self.replies_parent_folder = replies_parent_folder
-        self.reply_folder = os.path.join(replies_parent_folder, username)
-        logger.info(f"ReplyPosterが初期化されました。ユーザー: {username}, リプライフォルダ: {self.reply_folder}")
+        self.user_reply_folder = os.path.join(replies_parent_folder, username)
+        logger.info(f"ReplyPosterが初期化されました。ユーザー: {username}, リプライフォルダ: {self.user_reply_folder}")
 
-    def _load_reply_content(self) -> Dict[str, Optional[str]]:
+    def _get_reply_patterns(self) -> List[str]:
         """
-        リプライフォルダから返信内容を読み込む
+        ユーザーのリプライフォルダ内の全てのリプライパターンを取得する
 
+        :return: リプライパターンフォルダ名のリスト
+        """
+        patterns = []
+        try:
+            for item in os.listdir(self.user_reply_folder):
+                if os.path.isdir(os.path.join(self.user_reply_folder, item)) and item.startswith('reply'):
+                    patterns.append(item)
+            logger.info(f"ユーザー '{self.username}' のリプライパターン: {patterns}")
+        except FileNotFoundError:
+            logger.warning(f"ユーザー '{self.username}' のリプライフォルダが見つかりません: {self.user_reply_folder}")
+        return patterns
+
+    def _select_random_reply_pattern(self) -> Optional[str]:
+        """
+        利用可能なリプライパターンからランダムに1つを選択する
+
+        :return: 選択されたリプライパターンフォルダ名、またはNone
+        """
+        patterns = self._get_reply_patterns()
+        if patterns:
+            selected = random.choice(patterns)
+            logger.info(f"ユーザー '{self.username}' の選択されたリプライパターン: {selected}")
+            return selected
+        logger.warning(f"ユーザー '{self.username}' の利用可能なリプライパターンがありません。")
+        return None
+
+    def _load_reply_content(self, pattern: str) -> Dict[str, Optional[str]]:
+        """
+        指定されたリプライパターンフォルダから返信内容を読み込む
+
+        :param pattern: リプライパターンフォルダ名
         :return: 返信テキストと画像パスを含む辞書
         """
-        reply_text_path = os.path.join(self.reply_folder, 'reply.txt')
-        reply_image_path = os.path.join(self.reply_folder, 'reply_image.jpg')
+        pattern_folder = os.path.join(self.user_reply_folder, pattern)
+        reply_text_path = os.path.join(pattern_folder, 'reply.txt')
+        reply_image_path = os.path.join(pattern_folder, 'reply_image.jpg')
 
         reply_text = None
         reply_image = None
@@ -61,13 +94,19 @@ class ReplyPoster:
         :param thread_id: 返信先のスレッドID
         :return: 投稿された返信のID、またはNone（リプライフォルダが存在しない場合）
         """
-        if not os.path.exists(self.reply_folder):
+        if not os.path.exists(self.user_reply_folder):
             logger.info(f"ユーザー '{self.username}' のリプライフォルダが見つかりません。リプライは行いません。")
             return None
 
         logger.info(f"返信の投稿を開始: スレッドID={thread_id}")
         
-        reply_content = self._load_reply_content()
+        # ランダムなリプライパターンを選択
+        selected_pattern = self._select_random_reply_pattern()
+        if not selected_pattern:
+            logger.error("利用可能なリプライパターンがありません。返信を投稿できません。")
+            return None
+
+        reply_content = self._load_reply_content(selected_pattern)
         
         if not reply_content['text']:
             logger.error("返信テキストが見つかりません。返信を投稿できません。")
@@ -98,7 +137,7 @@ class ReplyPoster:
 # 使用例
 if __name__ == "__main__":
     from config import THREADS_AUTH_TOKEN
-    reply_poster = ReplyPoster(THREADS_AUTH_TOKEN, "test_user")
+    reply_poster = ReplyPoster(THREADS_AUTH_TOKEN, "test_user", "user_replies")
     thread_id = "existing_thread_id"  # 既存の投稿のIDを指定
-    reply_id = reply_poster.post_reply(thread_id, "これは返信テストです。", "path/to/image.jpg")
+    reply_id = reply_poster.post_reply(thread_id)
     print(f"返信ID: {reply_id}")
